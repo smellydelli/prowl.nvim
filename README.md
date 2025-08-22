@@ -66,4 +66,6 @@ Prowl gives you lightning-fast access to your buffers with single-key jumps. No 
 
 ## 💡 Inspiration
 
-Inspired by [https://github.com/iofq/dart.nvim](https://github.com/iofq/dart.nvim). Try their plugin if you need more features.
+Inspired by [https://github.com/iofq/dart.nvim](https://github.com/iofq/dart.nvim).
+
+Prowl will remain barebones simple, so try their plugin if you need more features.
