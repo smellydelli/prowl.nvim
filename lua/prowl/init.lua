@@ -294,6 +294,16 @@ M.should_show_buffer = function(filename)
   return should_show
 end
 
+-- Check if buffer is visible in any window
+M.is_buffer_visible = function(bufnr)
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(win) == bufnr then
+      return true
+    end
+  end
+  return false
+end
+
 -- State management with clearer names
 M.get_buffer_by_label = function(label)
   return M.label_lookup[label]
@@ -340,49 +350,40 @@ M.close_all_except_current = function()
   local current_filename = vim.api.nvim_buf_get_name(current_buf)
   local closed_count = 0
   local failed_count = 0
+  local skipped_visible = 0
 
-  -- Store the current buffer's state if it exists
-  local current_item = nil
-  for _, item in ipairs(M.state) do
-    if M.get_bufnr(item.filename) == current_buf then
-      current_item = item
-      break
-    end
-  end
+  -- Store buffers that should remain
+  local keep_buffers = {}
 
-  -- Close all buffers except current
+  -- Close all buffers except current AND visible ones
   for i = #M.state, 1, -1 do
     local item = M.state[i]
     local bufnr = M.get_bufnr(item.filename)
 
     if bufnr ~= current_buf and M.is_valid_buffer(bufnr) then
-      local ok = pcall(vim.api.nvim_buf_delete, bufnr, { force = false })
-      if ok then
-        closed_count = closed_count + 1
+      -- Check if buffer is visible in any window
+      if M.is_buffer_visible(bufnr) then
+        skipped_visible = skipped_visible + 1
+        table.insert(keep_buffers, item)
       else
-        failed_count = failed_count + 1
+        local ok = pcall(vim.api.nvim_buf_delete, bufnr, { force = false })
+        if ok then
+          closed_count = closed_count + 1
+        else
+          failed_count = failed_count + 1
+          table.insert(keep_buffers, item) -- Keep buffers that failed to close
+        end
       end
+    elseif bufnr == current_buf then
+      table.insert(keep_buffers, item)
     end
   end
 
-  -- Clear state and rebuild with just the current buffer
-  M.state = {}
+  -- Rebuild state with kept buffers
+  M.state = keep_buffers
 
-  -- If current buffer had a label, preserve it
-  if current_item then
-    M.state = { current_item }
-  elseif current_filename ~= "" then
-    -- Current buffer wasn't tracked, add it with first available label
-    M.state = {
-      {
-        filename = vim.fn.fnamemodify(current_filename, ":p"),
-        label = M.config.labels[1] or "q",
-      },
-    }
-  end
-
-  -- Rebuild lookups after state change
-  M.rebuild_lookups()
+  -- Sort to maintain label order
+  M.sort_buffers()
 
   -- Force a tabline refresh
   M.invalidate_tabline()
@@ -392,6 +393,9 @@ M.close_all_except_current = function()
   local msg = string.format("Closed %d buffer%s", closed_count, closed_count == 1 and "" or "s")
   if failed_count > 0 then
     msg = msg .. string.format(" (%d failed - unsaved changes)", failed_count)
+  end
+  if skipped_visible > 0 then
+    msg = msg .. string.format(" (%d visible in windows)", skipped_visible)
   end
   vim.notify(msg, vim.log.levels.INFO)
 end
