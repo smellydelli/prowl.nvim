@@ -30,7 +30,9 @@ Prowl gives you lightning-fast access to your buffers with single-key jumps. No 
 }
 ```
 
-## ⚙️ Setup
+## ⚙️ Default configuration
+
+The labels are chosen based on which keys are easiest to reach for me, and buffers are populated in the same order. The default theme works well with Tokyonight.
 
 ```lua
 {
