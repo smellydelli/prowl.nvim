@@ -19,14 +19,13 @@ Prowl gives you lightning-fast access to your buffers with single-key jumps. No 
 - **🧠 Logical Buffer Management** - New buffers appear right, older ones shift left naturally
 - **🎨 Themeable** - Customise colours to match your colourscheme
 
-## 📦 Installation
+## 📦 Lazyvim installation
 
 ```lua
 {
-  'smellydelli/prowl.nvim',
-  config = function()
-    require('prowl').setup()
-  end
+  "smellydelli/prowl.nvim",
+  name = "prowl",
+  opts = {},
 }
 ```
 
