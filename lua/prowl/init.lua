@@ -422,35 +422,42 @@ M.add_buffer = function(filename)
 
   local labels = M.config.labels
 
-  -- Try to find an unused label
+  -- Find ANY available label (prefer earlier ones for efficiency)
+  local available_label = nil
   for _, label in ipairs(labels) do
     if not M.get_buffer_by_label(label) then
-      table.insert(M.state, {
-        label = label,
-        filename = full_filename,
-      })
-      M.sort_buffers()
-      return
+      available_label = label
+      break
     end
   end
 
-  -- All labels taken - shift everything LEFT (older buffers move left)
-  -- Drop the oldest (leftmost) buffer and add new buffer on the right
-  for i = 1, #labels - 1 do
-    local current = M.get_buffer_by_label(labels[i])
-    local next = M.get_buffer_by_label(labels[i + 1])
-    if current and next then
-      current.filename = next.filename -- q gets w's file, w gets e's file, etc.
+  if available_label then
+    -- Add new buffer at the END of the state array (rightmost position)
+    table.insert(M.state, {
+      label = available_label,
+      filename = full_filename,
+    })
+    M.rebuild_lookups()
+    M.invalidate_tabline()
+  else
+    -- All labels taken - shift everything left and add new one at the end
+    for i = 1, #labels - 1 do
+      local current = M.get_buffer_by_label(labels[i])
+      local next = M.get_buffer_by_label(labels[i + 1])
+      if current and next then
+        current.filename = next.filename
+      end
     end
-  end
 
-  -- New buffer gets the LAST label (rightmost position)
-  local last = M.get_buffer_by_label(labels[#labels])
-  if last then
-    last.filename = full_filename
-  end
+    -- New buffer gets the last label
+    local last = M.get_buffer_by_label(labels[#labels])
+    if last then
+      last.filename = full_filename
+    end
 
-  M.sort_buffers()
+    M.rebuild_lookups()
+    M.invalidate_tabline()
+  end
 end
 
 -- Buffer cycling
