@@ -247,6 +247,8 @@ M.create_autocommands = function()
         end
         M.pending_buffers = {}
         M.process_timer = nil
+        -- tabline was already drawn before this deferred add; force a redraw
+        vim.cmd("redrawtabline")
       end, 10)
     end,
   })
